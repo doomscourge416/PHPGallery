@@ -8,7 +8,7 @@ function deleteImage($pdo){
     if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id'])) {
         $id = $_POST['id'];
         
-        // Получение пути к изображению из БД
+        // путь к изображению из БД
         $stmt = $pdo->prepare("SELECT path FROM images WHERE id = ?");
         $stmt->execute([$id]);
         $image = $stmt->fetch();

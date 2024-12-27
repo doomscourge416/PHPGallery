@@ -3,7 +3,6 @@ session_start();
 include 'config.php';
 include 'db.php';
 include 'showImages.php';
-include 'getUserID.php';
 
 $pdo = getDbConnection();
 $images = showImages($pdo);
@@ -36,7 +35,7 @@ $images = showImages($pdo);
     <?php endif; ?>
 
 
-    <!-- FIXME: Форма авторизации и логика её отсутствия (если уже залогированы) -->   
+    <!-- Форма авторизации и логика её отсутствия (если уже залогированы) -->   
     <?php if(!isset($_COOKIE['loggedin'])) : ?>
     <h4>Авторизация</h4>    
     <form method="POST" action="login.php">
@@ -83,14 +82,31 @@ $images = showImages($pdo);
                     $comments = $stmt->fetchAll();
                     ?>
 
-                <!-- // FIXME: починить getUserID, попробовать другой поход... этот полное гов.. -->
+                
                     <?php foreach ($comments as $comment): ?>
                     <div class="comment">
                     <p><strong><?php
-                        getUserID($pdo, $comments['author']);
-                    ?>  :
+                        
+                    // Подготовка SQL-запроса для получения имени пользователя
+                    $stmt = $pdo->prepare("SELECT username FROM users WHERE id = :author_id");
+                    $stmt->execute(['author_id' => $comment['author']]);
+                    $user = $stmt->fetch();
+
+                    // Проверка, найден ли пользователь, и вывод имени
+                    if ($user) {
+                        echo htmlspecialchars($user['username']);
+                    } else {
+                        echo "Неизвестный пользователь";
+                    }
+                    ?>:
                     </strong> <?= htmlspecialchars($comment['text']) ?></p>
                     <small><?= $comment['created_at'] ?></small>
+
+                    <!-- Форма для удаления комментария -->
+                    <form action="deleteComment.php" method="POST" style="display:inline;">
+                        <input type="hidden" name="comment_id" value="<?= $comment['id'] ?>">
+                        <button type="submit" onclick="return confirm('Вы уверены, что хотите удалить этот комментарий?');">Удалить</button>
+                    </form>
                     </div>
                     <?php endforeach; ?>
 
@@ -103,7 +119,7 @@ $images = showImages($pdo);
                     
                     <input type="hidden" name="image_id" value="<?= $image['id'] ?>">
                     <textarea name="text" required></textarea>
-                    <input type="hidden" name="author" value="<?= $_SESSION['user_id'] ?>">
+                    <input type="hidden" name="author" value="<?= $comment['author'] ?>">
                     <button type="submit" class="btn btn-primary">Оставить комментарий</button>
                     
                 </form>
